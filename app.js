@@ -4,26 +4,17 @@ const restKorisnici = require("./restKorisnici.js");
 const restKnjige = require("./restKnjige.js");
 const jwt = require("./jwt.js");
 const baza = require("./DAO/baza.js");
-const { DefaultAzureCredential } = require("@azure/identity");
-const { SecretClient } = require("@azure/keyvault-secrets");
 
 
 const app = express();
 
-async function initializeSecrets() {
-    if (process.env.NODE_ENV === 'production') {
-        const keyVaultUrl = process.env.KEY_VAULT_URL; 
-        if (!keyVaultUrl) {
-            throw new Error("KEY_VAULT_URL environment variable is not set.");
-        }
-        const credential = new DefaultAzureCredential();
-        const secretClient = new SecretClient(keyVaultUrl, credential);
-
-        process.env.MONGODB = (await secretClient.getSecret("CosmosDbConnectionString")).value;
-        process.env.JWT = (await secretClient.getSecret("jwt")).value;
-        console.log("Secrets loaded from Azure Key Vault.");
-    } else {
+// SIMPLIFIED: This function is now only for local development.
+// In Azure, environment variables are set automatically by App Service.
+function initializeApp() {
+    if (process.env.NODE_ENV !== 'production') {
         require("dotenv").config();
+    } else {
+        console.log("Running in production mode. Reading environment variables from App Service settings.");
     }
 }
 
@@ -85,14 +76,10 @@ const pripremaPutanja = () => {
 
 };
 
-initializeSecrets()
-  .then(() => {
-    pokreniServer();
-  })
-  .catch((error) => {
-    console.error("Greška prilikom inicijalizacije tajni:", error);
-    process.exit(1);
-  });
+// Start the application
+initializeApp();
+pokreniServer();
+
 
 process.on("SIGINT", async () => {
   await baza.prekiniVezu();
