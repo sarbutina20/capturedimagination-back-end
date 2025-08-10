@@ -40,6 +40,7 @@ function pokreniServer() {
     odgovor.json(poruka);
   });
 
+  const port = process.env.PORT || 8080;
   baza
     .connect()
     .then(() => {
