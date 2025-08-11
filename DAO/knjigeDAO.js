@@ -161,6 +161,10 @@ class KnjigeDAO {
               .digest("hex");
             const generiranaCijena = (parseInt(hash, 16) % 44) + 7;
 
+            const gCats = Array.isArray(volInfo?.categories) ? volInfo.categories : [];
+            // Always include 'lista' alongside Google categories
+            const kategorijeMerged = Array.from(new Set([...(gCats || []), lista]));
+
             const obogacenaKnjiga = {
               isbn: isbn,
               autor: knjiga.author,
@@ -172,21 +176,24 @@ class KnjigeDAO {
               slika: volInfo?.imageLinks?.thumbnail || knjiga.book_image,
               izdavac: volInfo?.publisher,
               datumIzdavanja: volInfo?.publishedDate,
-              kategorije: volInfo?.categories || [],
               cijena: generiranaCijena,
             };
 
-            console.log(
-              "Ažuriranje knjige:",
-              obogacenaKnjiga.naslov + " (ISBN: " + obogacenaKnjiga.isbn + ")"
-            );
-
             return {
               updateOne: {
-                filter: { isbn: obogacenaKnjiga.isbn },
+                filter: { isbn },
                 update: {
+                  // For new docs: set kategorije including 'lista'
+                  $setOnInsert: {
+                    ...obogacenaKnjiga,
+                    kategorije: kategorijeMerged
+                  },
+                  // For existing docs: update fields, and ALWAYS add 'lista' + Google cats
                   $set: obogacenaKnjiga,
-                  $addToSet: { bestseller_lists: lista },
+                  $addToSet: {
+                    bestseller_lists: lista,
+                    kategorije: { $each: kategorijeMerged } // ensures 'lista' is present
+                  }
                 },
                 upsert: true,
               },
@@ -212,8 +219,9 @@ class KnjigeDAO {
   }
 
   async dohvatiBestsellereIzBaze(lista) {
-    //this.azurirajBestsellere(lista);
-    //this.popuniKatalogGoogleKnjigama();
+    this.osveziKategorijeIzBestsellerLista();
+    this.azurirajBestsellere(lista);
+    this.popuniKatalogGoogleKnjigama();
     const db = this.baza.getDb();
     try {
       const knjige = await db
@@ -234,6 +242,9 @@ class KnjigeDAO {
       "hardcover-fiction",
       "hardcover-nonfiction",
       "graphic+books",
+      "graphic-books",
+      "graphic",
+      "comic+books",
       "manga",
       "business",
       "science",
@@ -248,7 +259,7 @@ class KnjigeDAO {
     ];
     let ukupnoDodanihKnjiga = 0;
     const knjigaPoStranici = 40;
-    const stranicaZaDohvat = 5; // Fetch 5 pages for a total of 200 books per category
+    const stranicaZaDohvat = 5;
 
     const db = this.baza.getDb();
     const kolekcijaKnjiga = db.collection("knjige");
@@ -264,11 +275,9 @@ class KnjigeDAO {
 
           if (!podaci.items) {
             console.log(
-              `Nema više knjiga za kategoriju: ${kategorija} na stranici ${
-                stranica + 1
-              }`
+              `Nema više knjiga za kategoriju: ${kategorija} na stranici ${stranica + 1}`
             );
-            break; // Stop fetching for this category if no more books are returned
+            break;
           }
 
           const operacije = podaci.items
@@ -277,12 +286,7 @@ class KnjigeDAO {
               const isbn = volInfo.industryIdentifiers?.find(
                 (id) => id.type === "ISBN_13"
               )?.identifier;
-              if (
-                !isbn ||
-                !volInfo.description ||
-                !volInfo.imageLinks?.thumbnail
-              )
-                return null;
+              if (!isbn || !volInfo.imageLinks?.thumbnail) return null;
 
               const hash = crypto
                 .createHash("md5")
@@ -290,22 +294,26 @@ class KnjigeDAO {
                 .digest("hex");
               const generiranaCijena = (parseInt(hash, 16) % 44) + 7;
 
+              const gCats = Array.isArray(volInfo.categories) ? volInfo.categories : [];
+              const categoriesMerged = Array.from(new Set([...gCats, kategorija])).filter(Boolean);
+
               return {
                 updateOne: {
-                  filter: { isbn: isbn },
+                  filter: { isbn },
                   update: {
                     $setOnInsert: {
-                      isbn: isbn,
+                      isbn,
                       autor: volInfo.authors?.join(", ") || "Nepoznat autor",
                       naslov: volInfo.title,
-                      opis: volInfo.description,
+                      opis: volInfo.description || "Nema dostupnog opisa.",
                       slika: volInfo.imageLinks?.thumbnail,
                       izdavac: volInfo.publisher,
                       datumIzdavanja: volInfo.publishedDate,
-                      kategorije: volInfo.categories || [kategorija],
+                      kategorije: categoriesMerged,
                       bestseller_lists: [],
                       cijena: generiranaCijena,
                     },
+                    $addToSet: { kategorije: { $each: categoriesMerged } },
                   },
                   upsert: true,
                 },
@@ -318,9 +326,7 @@ class KnjigeDAO {
             const dodano = rezultat.upsertedCount;
             ukupnoDodanihKnjiga += dodano;
             console.log(
-              `Dodano ${dodano} novih knjiga iz kategorije '${kategorija}' (Stranica ${
-                stranica + 1
-              }).`
+              `Dodano ${dodano} novih knjiga iz kategorije '${kategorija}' (Stranica ${stranica + 1}).`
             );
           }
         } catch (error) {
@@ -331,9 +337,7 @@ class KnjigeDAO {
         }
       }
     }
-    console.log(
-      `Katalog je ukupno popunjen s ${ukupnoDodanihKnjiga} novih knjiga.`
-    );
+    console.log(`Katalog je ukupno popunjen s ${ukupnoDodanihKnjiga} novih knjiga.`);
   }
 
   async dohvatiKosaricu(korisnik) {
@@ -445,6 +449,34 @@ class KnjigeDAO {
     } catch (error) {
       console.error("Greška pri dohvaćanju najpopularnijih knjiga:", error);
       return this.dohvatiBestsellereIzBaze("hardcover-fiction");
+    }
+  }
+
+  async osveziKategorijeIzBestsellerLista() {
+    const db = this.baza.getDb();
+    try {
+      const rezultat = await db
+        .collection("knjige")
+        .updateMany(
+          {},
+          [
+            {
+              $set: {
+                kategorije: {
+                  $setUnion: [
+                    { $ifNull: ["$kategorije", []] },
+                    { $ifNull: ["$bestseller_lists", []] }
+                  ]
+                }
+              }
+            }
+          ]
+        );
+      console.log(
+        `Ažurirano je ${rezultat.modifiedCount} dokumenata u kolekciji 'knjige'.`
+      );
+    } catch (error) {
+      console.error("Greška pri ažuriranju kategorija:", error);
     }
   }
 }

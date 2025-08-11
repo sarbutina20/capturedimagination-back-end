@@ -1,22 +1,13 @@
+if (process.env.NODE_ENV !== 'production') {
+    require("dotenv").config();
+}
 const express = require("express");
 const cors = require("cors");
 const restKorisnici = require("./restKorisnici.js");
 const restKnjige = require("./restKnjige.js");
 const jwt = require("./jwt.js");
 const baza = require("./DAO/baza.js");
-
-
 const app = express();
-
-// SIMPLIFIED: This function is now only for local development.
-// In Azure, environment variables are set automatically by App Service.
-function initializeApp() {
-    if (process.env.NODE_ENV !== 'production') {
-        require("dotenv").config();
-    } else {
-        console.log("Running in production mode. Reading environment variables from App Service settings.");
-    }
-}
 
 function pokreniServer() {
   app.use(express.urlencoded({ extended: true }));
@@ -40,7 +31,7 @@ function pokreniServer() {
     odgovor.json(poruka);
   });
 
-  const port = process.env.PORT || 8080;
+  const port = process.env.PORT || 5000;
   baza
     .connect()
     .then(() => {
@@ -77,8 +68,6 @@ const pripremaPutanja = () => {
 
 };
 
-// Start the application
-initializeApp();
 pokreniServer();
 
 

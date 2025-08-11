@@ -2,7 +2,7 @@ const { MongoClient } = require("mongodb");
 
 class Baza {
   constructor() {
-    this.url = process.env.MONGODB;
+    this.url = process.env.DB_CONNECTION_STRING;
     const clientOptions = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
