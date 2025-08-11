@@ -219,9 +219,9 @@ class KnjigeDAO {
   }
 
   async dohvatiBestsellereIzBaze(lista) {
-    this.osveziKategorijeIzBestsellerLista();
-    this.azurirajBestsellere(lista);
-    this.popuniKatalogGoogleKnjigama();
+    //this.osveziKategorijeIzBestsellerLista();
+    //this.azurirajBestsellere(lista);
+    //this.popuniKatalogGoogleKnjigama();
     const db = this.baza.getDb();
     try {
       const knjige = await db
@@ -380,8 +380,9 @@ class KnjigeDAO {
 
   async dohvatiPreporuke(korisnikId) {
     try {
-      // Use an environment variable for the Python API URL
       const pythonApiUrl = `${process.env.RECOMMENDATION_API_URL}/recommendations/${korisnikId}`;
+      //const pythonApiUrl = `${process.env.RECOMMENDATION_API_URL}/debug/${korisnikId}`;
+
       const preporukeOdgovor = await fetch(pythonApiUrl);
 
       if (!preporukeOdgovor.ok) {
