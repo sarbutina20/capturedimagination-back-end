@@ -44,7 +44,7 @@ class Baza {
     if (this.db) return this.db;
     try {
       await this.client.connect();
-      this.db = this.client.db(); // You can specify the DB name here, e.g., this.client.db("yourDbName")
+      this.db = this.client.db();
       console.log("Uspješno spojen na Cosmos DB.");
       return this.db;
     } catch (error) {

@@ -21,9 +21,7 @@ exports.knjige = async function (zahtjev, odgovor) {
   }
 };
 
-exports.narudzbe = async function (zahtjev, odgovor) {
-  
-
+exports.narudzbe = async function (zahtjev, odgovor) {  
   if (zahtjev.method === "GET") {
     const korisnik = zahtjev.korisnik;
     const kdao = new KnjigeDAO();

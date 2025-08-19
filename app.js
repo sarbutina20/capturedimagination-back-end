@@ -20,7 +20,6 @@ function pokreniServer() {
     optionsSuccessStatus: 200
   };
 
-  // Use the configured CORS options
   app.use(cors(corsOptions));
 
   pripremaPutanja();
@@ -69,7 +68,6 @@ const pripremaPutanja = () => {
 };
 
 pokreniServer();
-
 
 process.on("SIGINT", async () => {
   await baza.prekiniVezu();

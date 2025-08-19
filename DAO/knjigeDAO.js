@@ -63,7 +63,6 @@ class KnjigeDAO {
     }
   }
 
-  // OUTDATED: This method is no longer used, but kept for reference
   async knjige_NYT(lista) {
     try {
       const odgovor = await fetch(
@@ -162,7 +161,6 @@ class KnjigeDAO {
             const generiranaCijena = (parseInt(hash, 16) % 44) + 7;
 
             const gCats = Array.isArray(volInfo?.categories) ? volInfo.categories : [];
-            // Always include 'lista' alongside Google categories
             const kategorijeMerged = Array.from(new Set([...(gCats || []), lista]));
 
             const obogacenaKnjiga = {
@@ -183,16 +181,14 @@ class KnjigeDAO {
               updateOne: {
                 filter: { isbn },
                 update: {
-                  // For new docs: set kategorije including 'lista'
                   $setOnInsert: {
                     ...obogacenaKnjiga,
                     kategorije: kategorijeMerged
                   },
-                  // For existing docs: update fields, and ALWAYS add 'lista' + Google cats
                   $set: obogacenaKnjiga,
                   $addToSet: {
                     bestseller_lists: lista,
-                    kategorije: { $each: kategorijeMerged } // ensures 'lista' is present
+                    kategorije: { $each: kategorijeMerged }
                   }
                 },
                 upsert: true,

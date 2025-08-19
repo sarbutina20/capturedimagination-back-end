@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-
 exports.kreirajToken = async function (korisnik) {
 
     const payload = {
