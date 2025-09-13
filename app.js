@@ -15,7 +15,7 @@ function pokreniServer() {
 
   const corsOptions = {
     origin: process.env.NODE_ENV === 'production' 
-              ? 'https://your-frontend-app-name.azurewebsites.net' 
+              ? 'https://capturedimagination.tech' 
               : ['http://localhost:3000', 'http://localhost:4000'],
     optionsSuccessStatus: 200
   };
