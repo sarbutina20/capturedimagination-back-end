@@ -15,7 +15,7 @@ function pokreniServer() {
 
   const corsOptions = {
     origin: process.env.NODE_ENV === 'production' 
-              ? 'https://capturedimagination.tech' 
+              ? 'https://capturedimagination.tech'
               : ['http://localhost:3000', 'http://localhost:4000'],
     optionsSuccessStatus: 200
   };
@@ -32,7 +32,7 @@ function pokreniServer() {
 
   const port = process.env.PORT || 5000;
   baza
-    .connect()
+    .connect(port)
     .then(() => {
       app.listen(port, () => {
         console.log(`Server pokrenut na portu: ${port}`);

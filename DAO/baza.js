@@ -40,7 +40,7 @@ class Baza {
     }
   }
 
-  async connect() {
+  async connect(port) {
     if (this.db) return this.db;
     try {
       await this.client.connect();
