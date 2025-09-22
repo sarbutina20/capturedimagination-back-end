@@ -217,3 +217,20 @@ kreiranjeStripeSesije = async (line_items, customer) => {
   });
   return session;
 };
+
+exports.popularneKnjige = async function (zahtjev, odgovor) {
+  try {
+    const kdao = new KnjigeDAO();
+    const limit = 5;
+    const rezultat = await kdao.dohvatiNajpopularnijeKnjige(limit);
+
+    if (rezultat.error) {
+      return odgovor.status(500).json({ greska: rezultat.error });
+    }
+    
+    odgovor.status(200).json(rezultat.knjige);
+  } catch (error) {
+    console.error("Server error fetching popular books:", error);
+    odgovor.status(500).json({ greska: "Greška na serveru pri dohvaćanju popularnih knjiga." });
+  }
+};

@@ -64,6 +64,7 @@ const pripremaPutanja = () => {
   app.post("/api/favoriti", jwt.verificirajToken, restKorisnici.favoriti);
 
   app.get("/api/preporuke", jwt.verificirajToken, restKnjige.preporuke);
+  app.get("/api/popularne-knjige", restKnjige.popularneKnjige);
 
 };
 
